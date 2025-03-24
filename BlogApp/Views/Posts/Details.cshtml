@@ -1,0 +1,142 @@
+@model Post
+
+<div class="row">
+    <div class="col-lg-8"> @* Genel sayfanın 8'lik kısmını postalara ayırdık. *@
+        <div class="bg-white p-4">
+            <h1 class="h4 mb-4">@Model.Title</h1>
+
+            <div class="tags"> @* Post'un ait olduğu tagleri gösterdik. *@
+                @foreach (var tag in Model.Tags)
+                {
+                    @* <a href="/posts/tag/@tag.Url" class="badge bg-@tag.Color bg-opacity-10 text-@tag.Color mb-2 fw-bold">@tag.Text</a> Bu şekilde yazılabilirdi. *@
+                    <a asp-controller="Posts" asp-action="Index" asp-route-tag="@tag.Url"
+                        class="badge bg-@tag.Color bg-opacity-10 text-@tag.Color mb-2 fw-bold"> @tag.Text </a> @* Tag'lerden birine tıklanıldığında Tag'in Url değişkeni ile birlikte "posts/tag/tag" Örneğin:"/posts/tag/web-programlama" adresine yönlendirilir. Posts/Index actionu tetiklenir. *@
+                }
+            </div>
+
+            <img src="~/img/@Model.Image" class="img-fluid rounded" alt=""> @* Post'un resmi.*@
+
+            <ul class="list-inline my-3 "> @* Post'un tarihi ve paylaşan kullanıcı. *@
+                <li class="list-inline-item"><i class="bi bi-calendar"></i> @Model.PublishedOn.ToString("d")</li>
+                <li class="list-inline-item"><i class="bi bi-person-circle"></i>
+                    <a asp-controller="Users" asp-action="Profile" asp-route-username="@Model.User.UserName">
+                        @Model.User.Name </a> @* Kullanıcının profil sayfası. *@
+            </ul>
+
+            <hr class="py-3">
+            <div>@Html.Raw(@Model.Content)</div> @* Html.Raw sayesinde @Model.Content içindeki HTML etiketleri yorumlanır ve tarayıcıda doğru şekilde render edilir. Normalde, içerik düz metin olarak gösterilir, ancak Html.Raw kullanıldığında HTML etiketleri işlenip görünür hale gelir. *@
+
+        </div>
+
+        <div class="bg-white mt-3"> @* Yorum bölmesi. *@
+            <div class="card border-0">
+                <div class="card-header pb-0">
+                    <h4><span id="commentCount">@Model.Comments.Count()</span> adet yorum</h4> @* id="commentCount" vererek javasciprtte değeri güncelledik. *@
+                </div>
+                <div class="card-body">
+                    <div id="comments">
+                        @foreach (var comment in Model.Comments)
+                        {
+                            <div class="my-4 d-flex">
+                                <img src="/img/@comment.User.Image" alt="" class="avatar rounded-circle float-start me-3">
+                                <div>
+                                    <div class="mb-2 d-flex">
+                                        <h6 class="me-2">
+                                            <a asp-controller="Users" asp-action="Profile"
+                                                asp-route-username="@comment.User.UserName"> @comment.User.Name </a>
+                                        </h6>
+                                        <small>@comment.PublishedOn.ToString("G")</small>
+                                    </div>
+                                    <p>@comment.Text</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @if (User.Identity!.IsAuthenticated) @* Kullanıcı giriş yaptıysa yorum yapabilir. *@
+                    {
+                        <hr class="my-4">
+                        <div> @* Yorum ekleme bölmesi. *@
+                            <h4 class="mb-3">Yorum Ekle</h4>
+                            <form action="/posts/AddComment" method="post">
+
+                                <input type="hidden" id="PostId" name="PostId" value="@Model.PostId"> @* Gönderilecek olan comment'in hangi posta ait olacağı bilgisini tuttuk. *@
+
+                                <div class="mb-3">
+                                    <label for="Text" class="form-label">Yorum</label>
+                                    <textarea type="text" name="Text" id="Text" rows="3" class="form-control"></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <button id="btnYorumKayit" type="submit" class="btn btn-primary">Kaydet</button> @* Javascript'te kullanılması için id="btnYorumKayit" tanımladık buton için. *@
+                                </div>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <p>Yorum için uygulamaya giriş yapmalısınız. <a href="/users/login">Login</a></p> @* Kullanıcı giriş yapmadan yorum yapamaz. *@
+                    }
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4"> @* Genel sayfanın 4'lük kısmını ViewComponents'den taglere ayırdık. *@
+        <vc:tags-menu></vc:tags-menu> @* Ana sayfada sağ tarafta tag'leri görüntüler. Veritabanına kendisi gider ve verileri alır sonrasında kendi View'ında gösterir. "Views/Shared/Components/TagsMenu/Default.cshtml" *@
+        <vc:new-posts></vc:new-posts> @* Ana sayfada sağ tarafta tag altında son 5 postu görüntüler. "Views/Shared/Components/NewPosts/Default.cshtml" *@
+    </div>
+
+</div>
+
+
+@* _Layout'da ki section bölmesine gelir.*@
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            @* Sayfadaki bütün bileşenler yüklenecek sonrasıda javascript kodları çalışacak. *@
+
+                $("#btnYorumKayit").click(function () {
+                    @* id'si "btnYorumKayit" olan bir butona click işlemi. *@
+                        $.ajax({
+                            type: 'POST',
+                            url: '@Url.Action("AddComment")',
+                            dataType: 'json',
+                            data: {
+                                PostId: $('#PostId').val(), @* id'si "PostId" olan verinin değerini yolladık. *@
+                                UserName: $('#UserName').val(), @* id'si "UserName" olan verinin değerini yolladık. *@
+                                Text: $('#Text').val(), @* id'si "Text" olan verinin değerini yolladık. *@
+                                                },
+
+                    success: function (yorum) {
+                        console.log(yorum);
+                        var date = new Date(yorum.publishedOn);
+
+                        $("#comments").append(` @* id'si "comments" olan yorumlardan sonra yeni yorumu ekler. Yaptığı işlem ise yorumların gösterildiği foreach döngüsü içindeki kodları alarak yeni yorum için bazı yerleri değiştirerek yeni yorumu gönderir. *@
+                                                        <div class="my-4 d-flex">
+                                                            <img src="/img/${yorum.avatar}" alt="" class="avatar rounded-circle float-start me-3">
+                                                            <div>
+                                                                <div class="mb-2 d-flex">
+                                                                    <h6 class="me-2">${yorum.username}</h6>
+                                                                    <small>${date.toLocaleDateString()}</small>
+                                                                </div>
+                                                                <p>${yorum.text}</p>
+                                                            </div>
+                                                        </div>
+                                                    `);
+
+                        $("#UserName").val(''); @* Yeni yorum gönderildikten sonra input text'lerin içini boşalttık. *@
+                            $("#Text").val('');
+
+                        var adet = parseInt($("#commentCount").text());
+                        $("#commentCount").text(adet + 1); @* Yorum sayısını arttırdık. *@
+                                                }
+                                            });
+
+        return false; @* false değeri sayesinde butona basınca sayfanın yeniden başlatılmasını engelledik. *@
+                                        });
+
+                                    });
+    </script>
+}

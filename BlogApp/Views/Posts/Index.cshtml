@@ -1,0 +1,42 @@
+@model PostsViewModel
+@* Yukarıda sayfanın modelini PostsViewModel olarak belirledik. *@
+
+<div class="row">
+    <div class="col-lg-8"> @* Genel sayfanın 8'lik kısmını postalara ayırdık. *@
+        <div class="bg-white p-4">
+            <h1 class="h4 mb-4">Popular Posts</h1>
+            @foreach (var post in Model.Posts)
+            {
+                <div class="card bg-transparent border-0 mb-3">
+                    <div class="row">
+
+                        <div class="col-4"> @* 4'lük kısmı post resmine ayırdık. *@
+                            <img src="~/img/@post.Image" class="img-fluid rounded" alt="">
+                        </div>
+
+                        <div class="col-8"> @* 8'lik kısmı post'un content'ine ayırdık. *@
+                            <h5><a asp-controller="Posts" asp-action="Details" asp-route-url="@post.Url"
+                                    class="btn-link fw-bold">@post.Title</a> </h5> @* Ana sayfada postun Title'ına tıklanıldığında post'un Url değişkeni ile birlikte "posts/details/url" adresine yönlendirilir. Örneğin:"/posts/details/aspnet-core" *@
+
+                            <p>@post.Description</p>
+
+                        </div>
+                    </div>
+                </div>
+                <hr class="my-3">
+            }
+            <nav>
+                <ul class="pagination"> @* Sonraki sayfaya geçme butonları. *@
+                    <li class="page-item"><a href="#" class="page-link">1</a></li>
+                    <li class="page-item"><a href="#" class="page-link">2</a></li>
+                    <li class="page-item"><a href="#" class="page-link">3</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+    <div class="col-lg-4"> @* Genel sayfanın 4'lük kısmını ViewComponents'den taglere ayırdık. *@
+        <vc:tags-menu></vc:tags-menu> @* Ana sayfada sağ tarafta tag'leri görüntüler. Veritabanına kendisi gider ve verileri alır sonrasında kendi View'ında gösterir. "Views/Shared/Components/TagsMenu/Default.cshtml" *@
+        <vc:new-posts></vc:new-posts> @* Ana sayfada sağ tarafta tag altında son 5 postu görüntüler. "Views/Shared/Components/NewPosts/Default.cshtml" *@
+    </div>
+
+</div>
